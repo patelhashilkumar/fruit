@@ -1,10 +1,10 @@
-"""Local web app server.
+"""Upgraded Web Application Server: Multi-Task ResNet50 Fruit Identification & Ripeness Detection.
 
-    python webapp/server.py        then open http://127.0.0.1:8000
-
-Model used for the demo: the 5 cross-validation models of each kind (seed 0) are
-averaged (an ensemble). Each one was trained on 3/5 of the data, so together they
-have seen every training image. Grad-CAM is shown for the fold-0 ordinal model.
+Endpoints:
+  POST /api/predict: Predicts fruit type and ripeness with calibrated confidence + Grad-CAM heatmap.
+  GET  /api/results: Delivers comprehensive experiment statistics and evaluation summaries.
+  GET  /           : Main interactive application.
+  GET  /presentation: Project presentation deck.
 """
 import base64
 import io
@@ -22,91 +22,84 @@ from PIL import Image, ImageOps
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-sys.path.insert(0, os.path.join(ROOT, "src"))
-from common import GRADES, K, build_model, to_probs, transforms_for  # noqa: E402
-from gradcam import GradCAM  # noqa: E402
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
-torch.set_grad_enabled(False)
-TF = transforms_for(False)
+from inference.predictor import FruitRipenessPredictor
 
+# Initialize multi-task ResNet50 predictor using best Exp_F checkpoint
+BEST_CKPT = os.path.join(ROOT, "experiments", "checkpoints", "Exp_F", "best.pt")
+if not os.path.exists(BEST_CKPT):
+    BEST_CKPT = os.path.join(ROOT, "experiments", "checkpoints", "Exp_E", "best.pt")
 
-def load_kind(kind):
-    """List indexed by fold. Needs all 5 folds trained, so index == fold is guaranteed."""
-    nets = []
-    for f in range(5):
-        p = os.path.join(ROOT, "runs", f"{kind}_f{f}_s0", "best.pt")
-        if not os.path.exists(p):
-            sys.exit(f"missing {p} – run src/run_all.py first")
-        m = build_model(kind)
-        m.load_state_dict(torch.load(p, map_location="cpu"))
-        nets.append(m.eval())
-    return nets
+predictor = FruitRipenessPredictor(
+    checkpoint_path=BEST_CKPT if os.path.exists(BEST_CKPT) else None,
+    stage_config="4stage"
+)
+
+app = FastAPI(title="Fruit Identification & Ripeness Detection API")
 
 
-MODELS = {k: load_kind(k) for k in ("tl_ordinal", "tl_softmax")}
-CAMS = [GradCAM(m) for m in MODELS["tl_ordinal"]]
-print({k: len(v) for k, v in MODELS.items()}, "models loaded")
-
-# Which fold is each crop's TEST fold? A sample picked from the gallery is graded only by
-# the model that never trained on it, so the demo cannot show off memorised answers.
-import pandas as pd  # noqa: E402
-
-FOLD_OF = dict(pd.read_csv(os.path.join(ROOT, "data", "splits", "manifest.csv"))[["crop", "fold"]].values)
-
-app = FastAPI()
-
-
-def heat_png(img, heat):
-    """Blend the Grad-CAM map onto the photo with a warm template-coloured ramp."""
-    base = np.asarray(img.resize((224, 224)), dtype=np.float32) / 255
-    h = heat[..., None]
-    warm = np.array([0.93, 0.08, 0.60])          # template magenta
-    cool = np.array([0.64, 0.73, 0.98])          # template periwinkle
-    col = cool * (1 - h) + warm * h
-    out = base * (1 - 0.55 * h) + col * 0.55 * h
-    buf = io.BytesIO()
-    Image.fromarray((out.clip(0, 1) * 255).astype(np.uint8)).save(buf, "PNG")
-    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+@app.middleware("http")
+async def add_no_cache_header(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static") or request.url.path == "/" or request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 
 @app.post("/api/predict")
-async def predict(file: UploadFile = File(...), crop: str = ""):
-    img = ImageOps.exif_transpose(Image.open(io.BytesIO(await file.read()))).convert("RGB")
-    img.thumbnail((512, 512))
-    x = TF(img).unsqueeze(0)
-    fold = FOLD_OF.get(crop)  # gallery sample -> its own held-out model; upload -> ensemble of all 5
-    res = {"used": f"fold-{fold} model (never saw this photo)" if fold is not None else "ensemble of 5 models"}
-    for kind, all_nets in MODELS.items():
-        nets = [all_nets[fold]] if fold is not None and fold < len(all_nets) else all_nets
-        if not nets:
-            continue
-        outs = [n(x) for n in nets]
-        probs = torch.stack([to_probs(kind, o) for o in outs]).mean(0)[0]
-        r = {"probs": [round(float(p), 4) for p in probs]}
-        if kind == "tl_ordinal":
-            p_gt = torch.stack([torch.sigmoid(o) for o in outs]).mean(0)[0]
-            r["p_gt"] = [round(float(p), 4) for p in p_gt]          # P(grade > 0), > 1, > 2
-            r["grade"] = int((p_gt > 0.5).sum())
-            r["expected"] = round(float(p_gt.sum()), 3)                  # continuous ripeness 0..3
-        else:
-            r["grade"] = int(probs.argmax())
-        res[kind] = r
-    if CAMS:
-        cam = CAMS[fold] if fold is not None and fold < len(CAMS) else CAMS[0]
-        with torch.enable_grad():
-            heat, _ = cam(x.clone().requires_grad_(True), "tl_ordinal")
-        res["gradcam"] = heat_png(img, heat)
-    res["grades"] = GRADES
-    return JSONResponse(res)
+async def predict_endpoint(file: UploadFile = File(...), crop: str = "", cam_task: str = "ripeness"):
+    file_bytes = await file.read()
+    pred = predictor.predict(file_bytes, generate_cam=True, cam_task=cam_task)
+
+    if not pred.get("success"):
+        return JSONResponse({"error": pred.get("error", "Prediction failed")}, status_code=400)
+
+    # Seamlessly map both new multi-task fields and legacy visualization schema
+    stage_id = pred["ripeness_stage_id"]
+    sig_p = pred["threshold_probabilities"]
+    probs = pred["stage_probabilities"]
+
+    response_data = {
+        "fruit_type": pred["fruit_type"],
+        "fruit_confidence": pred["fruit_confidence"],
+        "fruit_probabilities": pred["fruit_probabilities"],
+        "ripeness": pred["ripeness"],
+        "ripeness_confidence": pred["ripeness_confidence"],
+        "ripeness_score": pred["ripeness_score"],
+        "model": pred["model"],
+        "used": f"ResNet50 Multi-Task CORAL (Exp_F Checkpoint: {pred['fruit_type']}, {pred['fruit_confidence']*100:.1f}%)",
+        "gradcam": pred.get("gradcam", ""),
+        "grades": ["unripe", "partially ripe", "ripe", "rotten"],
+        "tl_ordinal": {
+            "grade": stage_id,
+            "expected": pred["ripeness_score"],
+            "p_gt": sig_p,
+            "probs": probs
+        },
+        "tl_softmax": {
+            "grade": stage_id,
+            "probs": probs
+        }
+    }
+    return JSONResponse(response_data)
 
 
 @app.get("/api/results")
 def results():
     p = os.path.join(ROOT, "results", "web_results.json")
-    return JSONResponse(json.load(open(p)) if os.path.exists(p) else {})
+    if os.path.exists(p):
+        with open(p, "r") as f:
+            return JSONResponse(json.load(f))
+    return JSONResponse({})
 
 
+# Mount static assets
 app.mount("/results", StaticFiles(directory=os.path.join(ROOT, "results")), name="results")
+app.mount("/reports", StaticFiles(directory=os.path.join(ROOT, "reports")), name="reports")
 app.mount("/crops", StaticFiles(directory=os.path.join(ROOT, "data", "crops")), name="crops")
 app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
 
@@ -122,5 +115,7 @@ def presentation():
 
 
 if __name__ == "__main__":
-    # local default 127.0.0.1:8000; Hugging Face Spaces sets HOST=0.0.0.0 PORT=7860
-    uvicorn.run(app, host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", 8000)))
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", 8000))
+    print(f"Starting server on http://{host}:{port}")
+    uvicorn.run(app, host=host, port=port)

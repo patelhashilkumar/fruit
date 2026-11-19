@@ -1,0 +1,11 @@
+{
+  "exp_id": "Exp_B",
+  "epochs": 15,
+  "batch_size": 16,
+  "seed": 42,
+  "lr": 0.0001,
+  "freeze_epochs": 3,
+  "num_fruits": 6,
+  "num_stages": 4,
+  "model_name": "ResNet50_Softmax_Fruit"
+}

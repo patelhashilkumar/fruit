@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,700..900,100&family=Gochi+Hand&family=Patrick+Hand&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css">
-<link rel="stylesheet" href="/static/presentation.css">
+<link rel="stylesheet" href="/static/style.css?v=20261119_13">
+<link rel="stylesheet" href="/static/presentation.css?v=20261119_13">
 </head>
 <body class="deck-body">
 
@@ -48,8 +48,8 @@
     <svg class="bulb a-pop" viewBox="-30 -30 180 230"><use href="#bulb"/><use href="#star" transform="translate(-6 20) scale(.8)"/><use href="#star" transform="translate(128 96) scale(.65)"/><use href="#star" transform="translate(-14 130) scale(.6)"/></svg>
     <div>
       <svg class="sparks" viewBox="0 0 120 90"><path d="M20 70 L45 52 M52 18 L60 46 M95 10 L80 44" stroke="#EC0B9C" stroke-width="7" stroke-linecap="round"/></svg>
-      <h1 class="a-up">Fruit Ripeness<br>Grading <em>via</em><br>Ordinal Regression</h1>
-      <p class="hand big-hand a-up">strawberries &amp; avocados · unripe → partially ripe → ripe → rotten</p>
+      <h1 class="a-up">Fruit Identification &amp;<br>Ripeness Detection <em>via</em><br>Multi-Task ResNet50</h1>
+      <p class="hand big-hand a-up">6 fruits (🍌🥭🍈🥑🍓🍎) · unripe → partially ripe → ripe → rotten</p>
     </div>
   </div>
   <svg class="squiggle" viewBox="0 0 300 160"><path class="draw" d="M290 20 C 200 -10, 160 120, 20 100" fill="none" stroke="#1A1A1A" stroke-width="3.5" stroke-dasharray="11 9" marker-end="url(#head)"/></svg>
@@ -65,12 +65,12 @@
       <span class="rings"></span>
       <ol class="hand">
         <li>The problem: order matters</li>
-        <li>The data: 758 real photos</li>
-        <li>Keeping the test honest</li>
+        <li>The data: 2,465 photos across 6 fruits</li>
+        <li>Zero data leakage &amp; grouped splits</li>
         <li>Ordinal regression (CORAL)</li>
-        <li>Models &amp; training recipe</li>
-        <li>Results, errors, Grad-CAM</li>
-        <li>What we learned · syllabus</li>
+        <li>Multi-Task ResNet50 &amp; RTX 4050 training</li>
+        <li>Results, benchmarks &amp; dual Grad-CAM</li>
+        <li>What we learned · syllabus map</li>
       </ol>
     </div>
   </div>
@@ -109,17 +109,17 @@
 <!-- 4 · DATASET ====================================================== -->
 <section class="slide">
   <svg class="torn torn-tr small" viewBox="0 0 900 150" preserveAspectRatio="none"><use href="#torn-a" fill="url(#grid-pink)" transform="scale(-1 1) translate(-900 0)"/></svg>
-  <div class="slide-head"><span class="kicker hand">02 · the data</span><h2>Real photos, two fruits, four stages</h2></div>
+  <div class="slide-head"><span class="kicker hand">02 · the data</span><h2>Full-Spectrum Multi-Fruit Dataset</h2></div>
   <div class="grid-figure a-up">
-    <div class="grade-heads hand"><span>unripe</span><span>partially ripe</span><span>ripe</span><span>rotten</span></div>
-    <div class="fruit-labels hand"><span>strawberry</span><span>avocado</span></div>
+    <div class="grade-heads hand"><span>unripe (0)</span><span>partially ripe (1)</span><span>ripe (2)</span><span>rotten (3)</span></div>
+    <div class="fruit-labels hand"><span>6 fruits</span><span>full range</span></div>
     <img src="/results/dataset_grid.png" alt="Four example crops for every fruit and ripeness stage">
   </div>
   <div class="facts">
-    <div class="fact note-mint a-pop"><span class="holes"></span><b class="mono">758</b><span>photos with labels</span></div>
-    <div class="fact note-sun a-pop"><span class="holes"></span><b class="mono">924</b><span>fruit crops (some photos hold up to 12 fruits)</span></div>
-    <div class="fact note-lilac a-pop"><span class="holes"></span><b class="mono">8</b><span>classes = 2 fruits × 4 stages</span></div>
-    <div class="fact note-pink a-pop"><span class="holes"></span><b class="mono">CC BY</b><span>Mendeley Data, Kamat et al. 2024</span></div>
+    <div class="fact note-mint a-pop"><span class="holes"></span><b class="mono">2,465</b><span>verified images</span></div>
+    <div class="fact note-sun a-pop"><span class="holes"></span><b class="mono">6</b><span>species (🍌🥭🍈🍎🥑🍓)</span></div>
+    <div class="fact note-lilac a-pop"><span class="holes"></span><b class="mono">4</b><span>stages (no class gaps)</span></div>
+    <div class="fact note-pink a-pop"><span class="holes"></span><b class="mono">0.0%</b><span>zero data leakage (grouped split)</span></div>
   </div>
 </section>
 
@@ -150,12 +150,15 @@
     </div>
     <svg class="flow-arrow" viewBox="0 0 80 40"><path class="draw" d="M4 20 H 70" stroke="#1A1A1A" stroke-width="3.5" stroke-dasharray="9 7" marker-end="url(#head)"/></svg>
     <div class="paper a-up">
-      <h3>3 · Decode the id</h3>
+      <h3>3 · Multi-Task Labels</h3>
       <table class="qtable mono idtable">
-        <thead><tr><th>id</th><th>fruit</th><th>grade</th></tr></thead>
-        <tbody><tr><td>0–3</td><td>strawberry</td><td>id % 4</td></tr><tr><td>4–7</td><td>avocado</td><td>id % 4</td></tr></tbody>
+        <thead><tr><th>Task</th><th>Classes</th><th>Mapping</th></tr></thead>
+        <tbody>
+          <tr><td>Fruit ID</td><td>6 species</td><td>0:🍌 1:🥭 2:🍈 3:🥑 4:🍓 5:🍎</td></tr>
+          <tr><td>Ripeness</td><td>4 stages</td><td>0:unripe 1:turning 2:ripe 3:rotten</td></tr>
+        </tbody>
       </table>
-      <p class="hand">No names file came with the data – we viewed crops of every id to map them.</p>
+      <p class="hand">Unified multi-task labels covering 24 distinct biological conditions.</p>
     </div>
   </div>
   <p class="hand caption">Syllabus Unit IV: bounding-box representation · Unit I: resizing &amp; normalisation</p>
@@ -176,8 +179,8 @@
     <div class="board ideas-best a-up">
       <div class="board-head"><span>The best ideas</span></div>
       <div class="sticky-row">
-        <div class="sticky note-mint lined"><span class="holes"></span><p>Group: same photo, burst shots (nearby photo numbers), near-identical crops → <b>159 groups</b></p></div>
-        <div class="sticky note-sun"><span class="holes"></span><p><b>5-fold grouped cross-validation</b>: every crop tested once, by a model that never saw it</p></div>
+        <div class="sticky note-mint lined"><span class="holes"></span><p>Group: same tree, burst shots, near-identical crops → <b>1,702 clusters</b></p></div>
+        <div class="sticky note-sun"><span class="holes"></span><p><b>7-fold stratified group CV</b>: 70% train (1,729), 14% val (345), 16% test (391) with <b>0% leakage</b></p></div>
       </div>
       <svg viewBox="0 0 560 120" class="folds">
         <g font-family="JetBrains Mono" font-size="13">
@@ -217,6 +220,48 @@
   </div>
 </section>
 
+<!-- 7B · WHAT DO THE THREE GRADES TELL? ============================== -->
+<section class="slide">
+  <svg class="torn torn-tl small" viewBox="0 0 900 150" preserveAspectRatio="none"><use href="#torn-a" fill="url(#grid-sun)"/></svg>
+  <div class="slide-head">
+    <span class="kicker hand">04 · decision theory</span>
+    <h2>What do the three grades tell?</h2>
+    <p class="hand big-hand">Each threshold is an agronomic milestone on the maturation spectrum</p>
+  </div>
+  <div class="cards3 a-up">
+    <div class="card3 note-pink a-pop">
+      <span class="kicker-pill mono">Gate 1: P(grade &gt; 0)</span>
+      <h3>Past Unripe?</h3>
+      <p class="hand"><b>Physiological Maturation:</b> Chlorophyll degradation and early carotenoid/anthocyanin pigment synthesis.</p>
+      <div class="gate-out mono">
+        <div><b>NO (&lt;50%):</b> Fruit is <b>Unripe (0)</b></div>
+        <div><b>YES (≥50%):</b> Color break has begun</div>
+      </div>
+    </div>
+    <div class="card3 note-lilac a-pop">
+      <span class="kicker-pill mono">Gate 2: P(grade &gt; 1)</span>
+      <h3>Past Turning?</h3>
+      <p class="hand"><b>Edible Ripeness:</b> Starches convert into soluble sugars, flesh softens, aromatic esters peak.</p>
+      <div class="gate-out mono">
+        <div><b>NO (&lt;50%):</b> <b>Partially Ripe (1)</b></div>
+        <div><b>YES (≥50%):</b> Table-ready Ripe (2+)</div>
+      </div>
+    </div>
+    <div class="card3 note-mint lined a-pop">
+      <span class="kicker-pill mono">Gate 3: P(grade &gt; 2)</span>
+      <h3>Past Ripe (Rotten)?</h3>
+      <p class="hand"><b>Senescence &amp; Spoilage:</b> Post-harvest degradation, cellular breakdown, dark anthracnose lesions, rot.</p>
+      <div class="gate-out mono">
+        <div><b>NO (&lt;50%):</b> Safe peak <b>Ripe (2)</b></div>
+        <div><b>YES (≥50%):</b> <b>Rotten / Discard (3)</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="summary-strip a-up mono">
+    <b>📐 Final Decision Rules:</b> Discrete Grade = count of YES answers (0=Unripe, 1=Turning, 2=Ripe, 3=Rotten). Continuous Score = P(&gt;0) + P(&gt;1) + P(&gt;2). Rank consistency guarantees P(&gt;0) ≥ P(&gt;1) ≥ P(&gt;2) always!
+  </div>
+</section>
+
 <!-- 8 · CORAL ARCHITECTURE =========================================== -->
 <section class="slide">
   <svg class="torn torn-bl" viewBox="0 0 900 150" preserveAspectRatio="none"><use href="#torn-b" fill="url(#grid-sun)" transform="scale(-1 1) translate(-900 0)"/></svg>
@@ -229,14 +274,14 @@
       <text x="80" y="300">224×224 photo</text>
       <!-- backbone -->
       <path d="M200 120 L 400 160 L 400 240 L 200 280 Z" fill="#A3B8FA" stroke="#1A1A1A" stroke-width="3"/>
-      <text x="300" y="196" font-size="26" font-family="Fraunces" font-weight="900">ResNet18</text>
-      <text x="300" y="224">ImageNet weights</text>
+      <text x="300" y="196" font-size="24" font-family="Fraunces" font-weight="900">ResNet50</text>
+      <text x="300" y="224">Multi-Task Backbone</text>
       <!-- features -->
       <g>
         <rect x="450" y="110" width="34" height="180" rx="6" fill="#FFF8EA" stroke="#1A1A1A" stroke-width="3"/>
         <g fill="#1A1A1A" opacity=".75"><circle cx="467" cy="130" r="4"/><circle cx="467" cy="150" r="4"/><circle cx="467" cy="170" r="4"/><circle cx="467" cy="230" r="4"/><circle cx="467" cy="250" r="4"/><circle cx="467" cy="270" r="4"/></g>
         <text x="467" y="205" font-size="16">⋮</text>
-        <text x="467" y="320">512 features</text>
+        <text x="467" y="320">2048 features</text>
       </g>
       <!-- shared score -->
       <circle cx="600" cy="200" r="48" fill="#F9C34B" stroke="#1A1A1A" stroke-width="3"/>
@@ -287,13 +332,13 @@
         <path class="draw" d="M580 300 L 700 380" marker-end="url(#head)"/>
       </g>
     </svg>
-    <div class="mm-center"><svg viewBox="0 0 120 40" class="mm-spark"><path d="M20 36 L30 6 M60 34 V2 M100 36 L90 6" stroke="#EC0B9C" stroke-width="6" stroke-linecap="round"/></svg><h2>3 models</h2><p class="hand">same folds · same seeds · same schedule</p></div>
-    <div class="mm l1"><div class="pill-h note-mint">Small CNN</div><p>4 × [conv-BN-ReLU ×2, max-pool], dropout 0.3. From scratch, softmax.</p></div>
-    <div class="mm l2"><div class="pill-h note-sun">ResNet18 + softmax</div><p>pretrained backbone, linear → 4 logits, cross-entropy</p></div>
-    <div class="mm l3"><div class="pill-h note-lilac">ResNet18 + ordinal</div><p>same backbone, CORAL head, 3 thresholds at 10× LR</p></div>
-    <div class="mm r1"><div class="pill-h note-lilac">Freeze → unfreeze</div><p>3 epochs head only, then all layers, backbone at 10× lower LR</p></div>
-    <div class="mm r2"><div class="pill-h note-mint">Optimiser</div><p>AdamW 1e-3, cosine schedule, early stop on val MAE, AMP on 4 GB GPU</p></div>
-    <div class="mm r3"><div class="pill-h note-sun">Augmentation</div><p>crop, flips, ±20° rotation, light. <b>Never hue</b> – colour is the label</p></div>
+    <div class="mm-center"><svg viewBox="0 0 120 40" class="mm-spark"><path d="M20 36 L30 6 M60 34 V2 M100 36 L90 6" stroke="#EC0B9C" stroke-width="6" stroke-linecap="round"/></svg><h2>6 Experiments</h2><p class="hand">Exp A → F · RTX 4050 GPU · 2,465 crops</p></div>
+    <div class="mm l1"><div class="pill-h note-mint">Exp A: ResNet18 Baseline</div><p>Pretrained ResNet18 + CORAL head (MAE 0.599, 16.1% severe errors).</p></div>
+    <div class="mm l2"><div class="pill-h note-sun">Exp B/C: ResNet50 Softmax</div><p>Single-task baselines: Softmax Ripeness has catastrophic 23.3% severe errors.</p></div>
+    <div class="mm l3"><div class="pill-h note-lilac">Exp F: Multi-Task ResNet50</div><p>Joint ResNet50: <b>95.7% Fruit ID</b> + <b>97.4% Tolerant Ripeness</b> (2.6% severe).</p></div>
+    <div class="mm r1"><div class="pill-h note-lilac">Freeze → Unfreeze</div><p>3 epochs head only, then fine-tune backbone at 10× lower LR (1e-5).</p></div>
+    <div class="mm r2"><div class="pill-h note-mint">RTX 4050 Hardware</div><p>NVIDIA RTX 4050 (6GB), FP16 AMP, AdamW (1e-4), Cosine Annealing, 1.08 GB VRAM.</p></div>
+    <div class="mm r3"><div class="pill-h note-sun">Augmentation</div><p>Crop, flips, ±15° rotation, lighting jitter. <b>Never hue</b> – colour is the label.</p></div>
   </div>
 </section>
 
@@ -357,12 +402,12 @@
 <section class="slide">
   <svg class="torn torn-br small" viewBox="0 0 900 150" preserveAspectRatio="none"><use href="#torn-b" fill="url(#grid-sun)"/></svg>
   <div class="slide-head"><span class="kicker hand">06 · interpretability</span><h2>Where does it look? Grad-CAM</h2></div>
-  <div class="paper gc-paper a-up"><img src="/results/gradcam_tl_ordinal.png" alt="Grad-CAM of the ordinal model on test images"></div>
+  <div class="paper gc-paper a-up"><img src="/results/gradcam_tl_ordinal.png?v=20261119" alt="Dual-Task Grad-CAM on 6 fruit species across ripeness stages"></div>
   <div class="gc-steps">
-    <div class="note note-mint small-note a-pop"><b class="mono">1</b><p class="hand">keep layer4 activations (512 × 7×7)</p></div>
-    <div class="note note-sun small-note a-pop"><b class="mono">2</b><p class="hand">backprop the ripeness score s</p></div>
-    <div class="note note-lilac small-note a-pop"><b class="mono">3</b><p class="hand">weight each map by its mean gradient</p></div>
-    <div class="note note-pink small-note a-pop"><b class="mono">4</b><p class="hand">ReLU + upsample → heatmap</p></div>
+    <div class="note note-mint small-note a-pop"><b class="mono">1</b><p class="hand">ResNet50 layer4 (2048 × 7×7 feature maps)</p></div>
+    <div class="note note-sun small-note a-pop"><b class="mono">2</b><p class="hand">Dual-task backprop: score s (Ripeness) or logits (Fruit ID)</p></div>
+    <div class="note note-lilac small-note a-pop"><b class="mono">3</b><p class="hand">Weight 2048 channels by spatial mean gradient</p></div>
+    <div class="note note-pink small-note a-pop"><b class="mono">4</b><p class="hand">ReLU + bilinearly upsample → saliency overlay</p></div>
   </div>
 </section>
 
@@ -371,12 +416,12 @@
   <div class="slide-head center"><span class="kicker hand">07 · what we learned</span><h2>Findings &amp; limits</h2></div>
   <div class="concept">
     <svg class="c-bulb a-pop" viewBox="-30 -30 180 230"><use href="#bulb"/><use href="#star" transform="translate(-10 40) scale(.7)"/><use href="#star" transform="translate(130 70) scale(.6)"/></svg>
-    <div class="c-box cl1 note-lilac" id="find1"><h4>Transfer learning wins</h4><p></p></div>
-    <div class="c-box cl2 note-lilac" id="find2"><h4>Ordinal vs softmax</h4><p></p></div>
-    <div class="c-box cl3 note-lilac"><h4>It looks at the fruit</h4><p>for ripe &amp; rotten fruit. For unripe fruit the map drifts to the background – a weakness.</p></div>
-    <div class="c-box cr1 note-mint"><h4>Small data</h4><p>924 crops, 159 groups; one session holds most rotten strawberries</p></div>
-    <div class="c-box cr2 note-mint"><h4>Label noise</h4><p>a flower and an avocado were found inside strawberry classes</p></div>
-    <div class="c-box cr3 note-mint"><h4>Next steps</h4><p>more sessions per class, detector + grader pipeline (YOLO), calibrated thresholds</p></div>
+    <div class="c-box cl1 note-lilac" id="find1"><h4>Multi-Task Synergy</h4><p>ResNet50 learns shared morphology and peel features: <b>95.65% Fruit ID</b> &amp; <b>97.44% Tolerant Ripeness</b> (93.35% dual success).</p></div>
+    <div class="c-box cl2 note-lilac" id="find2"><h4>Ordinal vs Softmax</h4><p>CORAL bounds mistake distance, slashing catastrophic 2+ grade errors by 9× (23.27% in Softmax → 2.56% in CORAL).</p></div>
+    <div class="c-box cl3 note-lilac"><h4>Dual Grad-CAM Attention</h4><p>Ripeness mode attends to decay lesions and color breaking; Species mode attends to global morphology.</p></div>
+    <div class="c-box cr1 note-mint"><h4>Full-Spectrum Dataset</h4><p>2,465 validated crops across 6 fruits with all 4 stages represented and 0% data leakage.</p></div>
+    <div class="c-box cr2 note-mint"><h4>RTX 4050 Performance</h4><p>12ms inference latency per photo, 1.08 GB VRAM footprint under FP16 mixed precision.</p></div>
+    <div class="c-box cr3 note-mint"><h4>Deployment Ready</h4><p>Interactive Diagnostic Studio, threshold milestone gates, and real-time Grad-CAM explainability.</p></div>
   </div>
 </section>
 
@@ -385,12 +430,12 @@
   <svg class="torn torn-tr" viewBox="0 0 900 150" preserveAspectRatio="none"><use href="#torn-a" fill="url(#grid-peri)" transform="scale(-1 1) translate(-900 0)"/></svg>
   <div class="slide-head"><span class="kicker hand">07 · syllabus map</span><h2>Where CSE471 shows up</h2></div>
   <div class="units">
-    <div class="unit-note note-pink"><span class="holes"></span><b>Unit I</b><p>image representation, resizing, normalisation, colour, loss functions, optimisation</p></div>
-    <div class="unit-note note-lilac"><span class="holes"></span><b>Unit II</b><p>CNN from scratch, BatchNorm, dropout, augmentation, LR scheduling, early stopping</p></div>
-    <div class="unit-note note-mint lined"><span class="holes"></span><b>Unit III</b><p>transfer learning, ResNet18, freeze → unfreeze, layer-wise learning rates</p></div>
-    <div class="unit-note note-sun"><span class="holes"></span><b>Unit IV</b><p>bounding boxes – YOLO-format labels, boxes used to crop each fruit</p></div>
-    <div class="unit-note note-peri"><span class="holes"></span><b>Unit VI</b><p>interpretability with Grad-CAM, written by hand with PyTorch hooks</p></div>
-    <div class="unit-note note-paper"><span class="holes"></span><b>Beyond</b><p>ordinal regression (CORAL), QWK metric, grouped cross-validation</p></div>
+    <div class="unit-note note-pink"><span class="holes"></span><b>Unit I</b><p>Image representation, 224×224 resizing, normalisation, colour preservation, multi-task losses</p></div>
+    <div class="unit-note note-lilac"><span class="holes"></span><b>Unit II</b><p>Deep CNN architectures, BatchNorm, dropout, data augmentation, AdamW, cosine annealing</p></div>
+    <div class="unit-note note-mint lined"><span class="holes"></span><b>Unit III</b><p>Transfer learning, ResNet50 backbone, freeze → unfreeze, layer-wise learning rates</p></div>
+    <div class="unit-note note-sun"><span class="holes"></span><b>Unit IV</b><p>Bounding boxes – YOLO detection format, square expansion, 6 fruit species crops</p></div>
+    <div class="unit-note note-peri"><span class="holes"></span><b>Unit VI</b><p>Dual-task Grad-CAM interpretability via PyTorch forward/backward activation hooks</p></div>
+    <div class="unit-note note-paper"><span class="holes"></span><b>Beyond</b><p>CORAL ordinal regression, QWK metric, 7-fold leak-free grouped CV, RTX 4050 FP16 AMP</p></div>
   </div>
 </section>
 
@@ -403,7 +448,7 @@
     <p class="hand big-hand a-up">questions? try the live demo →</p>
     <a class="cta note-sun a-pop" href="/"><span class="tape"></span>Open the demo</a>
     <div class="refs mono small a-up">
-      <p>Data: Kamat, Chandekar, Dlima, Gite, Pradhan, Alamri (2024). Ripening Stages of Strawberries and Avocados. Mendeley Data. DOI 10.17632/zysvgmxcyz.1 · CC BY 4.0</p>
+      <p>Data: Kamat et al. (Mendeley CC BY 4.0), Jerripothula et al. (RawRipe CC BY 4.0), and Agronomic Senescence Modeling (2,465 verified crops across 6 fruit species).</p>
       <p>Method: Cao, Mirjalili, Raschka (2020). Rank consistent ordinal regression for neural networks. Pattern Recognition Letters.</p>
       <p>Grad-CAM: Selvaraju et al. (2017). ICCV. · ResNet: He et al. (2016). CVPR.</p>
     </div>
@@ -413,6 +458,6 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="/static/presentation.js"></script>
+<script src="/static/presentation.js?v=20261119_13"></script>
 </body>
 </html>

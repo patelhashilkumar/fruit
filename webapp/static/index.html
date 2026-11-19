@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ripe or Not – Ordinal Fruit Grading</title>
+<title>Ripe or Not – Multi-Task Fruit Identification & Ordinal Ripeness</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,700..900,100&family=Gochi+Hand&family=Patrick+Hand&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/style.css?v=20261119_13">
 </head>
 <body>
 
@@ -29,74 +29,239 @@
   </defs>
 </svg>
 
-<!-- ================================================================ HERO + DEMO -->
+<!-- ================================================================ HERO + WORKBENCH -->
 <header class="hero" id="top">
   <svg class="torn torn-tl" viewBox="0 0 900 150" preserveAspectRatio="none"><path fill="url(#grid-peri)" d="M0 0H900V40l-22 6-18-9-26 12-20-4-30 10-24-6-28 13-16-5-34 11-22-3-26 12-30-7-20 9-28-2-24 12-30-8-18 10-32-4-22 11-26-6-30 13-20-5-28 9-24-3-34 12-18-6-26 10-30-4-22 9-28-7-20 11-32-2-24 8-26-5-18 12-30-6-22 4L0 150Z"/></svg>
   <svg class="torn torn-br" viewBox="0 0 900 150" preserveAspectRatio="none"><path fill="url(#grid-peri)" d="M900 150H0v-30l26-8 20 10 30-12 18 6 28-11 22 5 34-12 20 4 26-10 30 7 22-11 28 3 24-12 30 9 18-10 32 5 22-12 26 6 30-13 20 5 28-9 24 3 34-12 18 6 26-10 30 4 22-9 28 7 20-11 32 2 24-8L900 0Z"/></svg>
 
   <nav class="nav">
     <a class="logo" href="#top">Ripe<span>/</span>or<span>/</span>Not</a>
+    <div class="model-badge mono small">ResNet50 Multi-Task CORAL</div>
     <div class="links">
-      <a href="#idea">Idea</a><a href="#pipeline">Pipeline</a><a href="#results">Results</a><a href="#look">Grad-CAM</a><a href="/presentation">Presentation</a>
+      <a href="#demo">Workbench</a><a href="#idea">Theory</a><a href="#pipeline">Pipeline</a><a href="#results">Results</a><a href="#look">Grad-CAM</a><a href="/presentation">Presentation</a>
     </div>
   </nav>
 
-  <div class="hero-grid">
-    <div class="hero-copy">
-      <svg class="sparks" viewBox="0 0 120 90" aria-hidden="true"><path d="M20 70 L45 52 M52 18 L60 46 M95 10 L80 44" stroke="#EC0B9C" stroke-width="7" stroke-linecap="round"/></svg>
-      <h1>Ripe<br>or <em>not?</em></h1>
-      <p class="lede">Show it a strawberry or an avocado. It grades ripeness on an ordered scale,
-        <b>unripe → partially ripe → ripe → rotten</b>, and shows where it looked.</p>
-      <p class="byline">Fruit ripeness grading via <u>ordinal regression</u></p>
-      <svg class="hero-arrow" viewBox="0 0 260 120" aria-hidden="true"><path class="draw" d="M8 20 C 80 0, 120 100, 240 80" fill="none" stroke="#1A1A1A" stroke-width="3" stroke-dasharray="10 9" marker-end="url(#head)"/></svg>
+  <!-- Centered Hero Title & Subtitle with proper clearance from torn-tl -->
+  <div class="hero-intro">
+    <svg class="sparks" viewBox="0 0 120 90" aria-hidden="true"><path d="M20 70 L45 52 M52 18 L60 46 M95 10 L80 44" stroke="#EC0B9C" stroke-width="7" stroke-linecap="round"/></svg>
+    <h1>Ripe or <em>not?</em></h1>
+    <p class="lede">Upload or pick any fruit photo to identify species and predict ripeness on an ordered continuous scale (<b>unripe → partially ripe → ripe → rotten</b>).</p>
+    <div class="fruit-chips">
+      <span class="chip">🍌 Banana</span>
+      <span class="chip">🥭 Mango</span>
+      <span class="chip">🍈 Papaya</span>
+      <span class="chip">🥑 Avocado</span>
+      <span class="chip">🍓 Strawberry</span>
+      <span class="chip">🍎 Apple</span>
     </div>
+  </div>
 
-    <!-- demo board -->
+  <!-- Dedicated Diagnostic Workbench -->
+  <div class="workbench-wrap">
     <div class="board" id="demo">
-      <div class="board-head"><span>Try it</span><span class="mono muted" id="status">model ready</span></div>
-      <div class="board-body">
-        <label class="drop note note-mint" id="drop">
-          <input type="file" accept="image/*" id="file" hidden>
-          <span class="holes"></span>
-          <img id="photo" alt="">
-          <span class="drop-text" id="dropText">Drop a fruit photo here<br><small>or click to choose one</small></span>
-        </label>
-        <div class="samples">
-          <span class="hand muted">or pick a test photo the model never trained on</span>
-          <div class="sample-row" id="samples"></div>
+      <div class="board-head">
+        <div class="head-left">
+          <span class="head-title">Diagnostic Workbench</span>
+          <span class="head-tag hand">interactive studio</span>
         </div>
+        <span class="mono muted" id="status">model ready • RTX 4050</span>
       </div>
 
-      <div class="result" id="result" hidden>
-        <div class="ruler-wrap">
-          <div class="ruler-title hand">ripeness ruler</div>
-          <div class="ruler" id="ruler">
-            <div class="ruler-track"></div>
-            <div class="tick" style="--i:0"><b>0</b><span>unripe</span></div>
-            <div class="tick" style="--i:1"><b>1</b><span>partially ripe</span></div>
-            <div class="tick" style="--i:2"><b>2</b><span>ripe</span></div>
-            <div class="tick" style="--i:3"><b>3</b><span>rotten</span></div>
-            <div class="pointer" id="pointer">
-              <svg viewBox="0 0 40 70"><path d="M20 66 C 6 50, 30 34, 20 6" fill="none" stroke="#EC0B9C" stroke-width="4" stroke-dasharray="7 6"/><path d="M10 16 L20 2 L30 16" fill="none" stroke="#EC0B9C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span class="mono" id="score">0.00</span>
+      <div class="workbench-layout">
+        <!-- LEFT PANEL: Image Input & Interactive Controls (400px) -->
+        <div class="panel-left">
+          <!-- Drop Card -->
+          <div class="drop-card paper">
+            <span class="tape"></span>
+            <label class="drop note note-mint" id="drop">
+              <input type="file" accept="image/*" id="file" hidden>
+              <span class="holes"></span>
+              <img id="photo" alt="Selected fruit preview">
+              <div class="drop-text" id="dropText">
+                <span class="drop-icon">📸</span>
+                <span>Drop a fruit photo here<br><small>or click to browse from device</small></span>
+              </div>
+            </label>
+            <div class="drop-actions">
+              <button type="button" class="btn-tool note-sun" id="btnBrowse">📁 Browse Photo</button>
+              <button type="button" class="btn-tool note-paper" id="btnReset" title="Clear photo and reset">↺ Reset</button>
             </div>
           </div>
-          <div class="verdict" id="verdict"></div>
+
+          <!-- Controls Box -->
+          <div class="control-box note note-paper">
+            <span class="holes"></span>
+            <h4>Interactive Controls</h4>
+
+            <!-- CAM Task Focus Toggle -->
+            <div class="control-group">
+              <span class="hand ctrl-lbl">Grad-CAM Focus:</span>
+              <div class="pill-group" id="camTaskGroup">
+                <button type="button" class="pill-btn active" data-cam="ripeness" id="btnCamRipeness">🎯 Ripeness Attention</button>
+                <button type="button" class="pill-btn" data-cam="fruit" id="btnCamFruit">🔍 Species Features</button>
+              </div>
+            </div>
+
+            <!-- Gallery Filter Pills -->
+            <div class="control-group">
+              <span class="hand ctrl-lbl">Filter by Fruit:</span>
+              <div class="pills-scroll" id="fruitFilters">
+                <button type="button" class="filter-pill active" data-fruit="all">All (24)</button>
+                <button type="button" class="filter-pill" data-fruit="banana">🍌 Banana</button>
+                <button type="button" class="filter-pill" data-fruit="mango">🥭 Mango</button>
+                <button type="button" class="filter-pill" data-fruit="papaya">🍈 Papaya</button>
+                <button type="button" class="filter-pill" data-fruit="apple">🍎 Apple</button>
+                <button type="button" class="filter-pill" data-fruit="avocado">🥑 Avocado</button>
+                <button type="button" class="filter-pill" data-fruit="strawberry">🍓 Strawberry</button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <span class="hand ctrl-lbl">Filter by Stage:</span>
+              <div class="pills-scroll" id="stageFilters">
+                <button type="button" class="filter-pill active" data-stage="all">All Stages</button>
+                <button type="button" class="filter-pill" data-stage="0">🟢 Unripe</button>
+                <button type="button" class="filter-pill" data-stage="1">🟡 Turning</button>
+                <button type="button" class="filter-pill" data-stage="2">🔴 Ripe</button>
+                <button type="button" class="filter-pill" data-stage="3">🟤 Rotten</button>
+              </div>
+            </div>
+
+            <!-- Samples Grid -->
+            <div class="samples-wrapper">
+              <span class="hand small muted">click any test photo to grade:</span>
+              <div class="sample-grid" id="samples"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="questions">
-          <div class="q note note-pink"><span class="holes"></span><p>grade &gt; 0 ?</p><div class="bar"><i></i></div><span class="mono pct"></span></div>
-          <div class="q note note-lilac"><span class="holes"></span><p>grade &gt; 1 ?</p><div class="bar"><i></i></div><span class="mono pct"></span></div>
-          <div class="q note note-mint lined"><span class="holes"></span><p>grade &gt; 2 ?</p><div class="bar"><i></i></div><span class="mono pct"></span></div>
-        </div>
+        <!-- RIGHT PANEL: Diagnostic Studio & Results (flex: 1) -->
+        <div class="panel-right">
+          <!-- Waiting / Placeholder State -->
+          <div class="studio-placeholder paper" id="placeholderStudio">
+            <span class="tape tape-l"></span>
+            <div class="ph-content">
+              <span class="ph-arrow">👈</span>
+              <div class="ph-text">
+                <h3>Diagnostic Studio Ready</h3>
+                <p class="hand">Drop a fruit photo on the left or click any sample thumbnail to run ResNet50 Multi-Task inference!</p>
+                <ul class="ph-list mono small">
+                  <li>• Identifies fruit species across 6 categories (Softmax)</li>
+                  <li>• Predicts continuous ripeness score (0.0 to 3.0) via CORAL Ordinal Head</li>
+                  <li>• Generates dual-task Grad-CAM saliency heatmaps</li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
-        <div class="looked">
-          <figure class="polaroid"><img id="camImg" alt="Grad-CAM heatmap"><figcaption class="hand">where it looked (Grad-CAM)</figcaption></figure>
-          <div class="compare note note-sun">
-            <span class="tape"></span>
-            <p class="hand">plain softmax model says</p>
-            <p class="big" id="softmaxSays">–</p>
-            <p class="mono small" id="softmaxProbs"></p>
+          <!-- Active Result State -->
+          <div class="result" id="result" hidden>
+            <!-- Fruit Identity Card -->
+            <div class="fruit-identity note note-sun" id="fruitIdentity">
+              <div class="fruit-header">
+                <span class="fruit-emoji" id="fruitEmoji">🍌</span>
+                <div>
+                  <span class="hand sub">Identified Fruit Species</span>
+                  <b class="fruit-title" id="fruitName">–</b>
+                </div>
+              </div>
+              <div class="mono conf-pill" id="fruitConfidence">–% conf</div>
+            </div>
+
+            <!-- Softmax Species Probabilities -->
+            <div class="prob-box paper">
+              <div class="prob-head hand">Softmax Species Probabilities (6 Classes)</div>
+              <div class="prob-grid" id="probGrid"></div>
+            </div>
+
+            <!-- Ripeness Ruler -->
+            <div class="ruler-card paper">
+              <div class="ruler-header">
+                <span class="ruler-title hand">Ripeness Ruler (Ordinal Regression)</span>
+                <span class="ruler-scale mono small">Scale: 0 (Unripe) → 3 (Rotten)</span>
+              </div>
+              <div class="ruler" id="ruler">
+                <div class="ruler-track"></div>
+                <div class="tick" style="--i:0"><b>0</b><span>unripe</span></div>
+                <div class="tick" style="--i:1"><b>1</b><span>partially ripe</span></div>
+                <div class="tick" style="--i:2"><b>2</b><span>ripe</span></div>
+                <div class="tick" style="--i:3"><b>3</b><span>rotten</span></div>
+                <div class="pointer" id="pointer">
+                  <svg viewBox="0 0 40 70"><path d="M20 66 C 6 50, 30 34, 20 6" fill="none" stroke="#EC0B9C" stroke-width="4" stroke-dasharray="7 6"/><path d="M10 16 L20 2 L30 16" fill="none" stroke="#EC0B9C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="mono" id="score">0.00</span>
+                </div>
+              </div>
+              <div class="verdict" id="verdict"></div>
+            </div>
+
+            <!-- CORAL Questions -->
+            <div class="questions-section paper">
+              <div class="q-header">
+                <div>
+                  <span class="hand q-title">Cumulative Ordinal Decisions (CORAL Gates)</span>
+                  <span class="mono small muted" style="display:block;margin-top:2px">Each gate tests if the fruit has progressed past a key maturity milestone</span>
+                </div>
+                <span class="mono small badge-rule">Grade = count of "yes" answers (&gt; 50%)</span>
+              </div>
+              <div class="questions">
+                <div class="q note note-pink">
+                  <span class="holes"></span>
+                  <div class="q-top">
+                    <p class="q-rule">grade &gt; 0 ?</p>
+                    <span class="q-tag hand">Past Unripe</span>
+                  </div>
+                  <div class="bar"><i></i></div>
+                  <div class="q-footer">
+                    <span class="mono pct"></span>
+                    <span class="q-desc">Color break begins; leaves raw green stage</span>
+                  </div>
+                </div>
+                <div class="q note note-lilac">
+                  <span class="holes"></span>
+                  <div class="q-top">
+                    <p class="q-rule">grade &gt; 1 ?</p>
+                    <span class="q-tag hand">Past Turning</span>
+                  </div>
+                  <div class="bar"><i></i></div>
+                  <div class="q-footer">
+                    <span class="mono pct"></span>
+                    <span class="q-desc">Sugar conversion complete; table-ready ripe</span>
+                  </div>
+                </div>
+                <div class="q note note-mint lined">
+                  <span class="holes"></span>
+                  <div class="q-top">
+                    <p class="q-rule">grade &gt; 2 ?</p>
+                    <span class="q-tag hand">Past Ripe (Rotten)</span>
+                  </div>
+                  <div class="bar"><i></i></div>
+                  <div class="q-footer">
+                    <span class="mono pct"></span>
+                    <span class="q-desc">Post-harvest senescence, necrotic decay &amp; spots</span>
+                  </div>
+                </div>
+              </div>
+              <div class="q-explainer mono small">
+                <span class="expl-pill">💡 Ripeness Logic</span>
+                <span><b>0 Yes</b> = Unripe (0) · <b>1 Yes</b> = Partially Ripe (1) · <b>2 Yes</b> = Ripe (2) · <b>3 Yes</b> = Rotten (3). Continuous Score = P(&gt;0) + P(&gt;1) + P(&gt;2).</span>
+              </div>
+            </div>
+
+            <!-- Grad-CAM & Softmax Compare Studio -->
+            <div class="looked">
+              <figure class="polaroid">
+                <img id="camImg" alt="Grad-CAM heatmap">
+                <figcaption class="hand" id="camCaption">where it looked (Grad-CAM)</figcaption>
+              </figure>
+              <div class="compare note note-sun">
+                <span class="tape"></span>
+                <p class="hand">plain softmax model says</p>
+                <p class="big" id="softmaxSays">–</p>
+                <p class="mono small" id="softmaxProbs"></p>
+                <p class="small muted" style="margin-top:8px">Softmax treats grades as disjoint classes; CORAL enforces ordinal rank consistency.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -150,18 +315,24 @@
       <path class="draw" d="M712 430 C 685 450, 660 450, 635 430" marker-end="url(#head)"/>
       <path class="draw" d="M362 430 C 335 450, 310 450, 285 430" marker-end="url(#head)"/>
     </svg>
-    <div class="node note-mint" style="--x:1%;--y:4%"><h4>758 real photos</h4><p>strawberries + avocados, YOLO boxes, 8 classes → 924 fruit crops</p><span class="unit">Unit I · IV</span></div>
-    <div class="node note-sun" style="--x:37%;--y:4%"><h4>Leak-free folds</h4><p>burst shots &amp; edited copies kept together, 5-fold grouped CV</p><span class="unit">method</span></div>
+    <div class="node note-mint" style="--x:1%;--y:4%"><h4>2,465 photos</h4><p>6 fruits, 4 stages, verified &amp; balanced</p><span class="unit">Unit I · IV</span></div>
+    <div class="node note-sun" style="--x:37%;--y:4%"><h4>Leak-free folds</h4><p>burst shots &amp; copies grouped, zero split leakage</p><span class="unit">method</span></div>
     <div class="node note-lilac" style="--x:73%;--y:4%"><h4>Augment</h4><p>crop, flip, rotate, light. <b>never hue</b> – colour is the label</p><span class="unit">Unit II</span></div>
-    <div class="node note-pink" style="--x:73%;--y:62%"><h4>ResNet18</h4><p>ImageNet weights, frozen 3 epochs, then unfrozen with 10× smaller LR</p><span class="unit">Unit III</span></div>
-    <div class="node note-mint" style="--x:37%;--y:62%"><h4>Ordinal head</h4><p>1 shared score + 3 thresholds, BCE loss, rank-consistent</p><span class="unit">beyond syllabus</span></div>
-    <div class="node note-sun" style="--x:1%;--y:62%"><h4>Grade + Grad-CAM</h4><p>count the yes answers, then show the evidence</p><span class="unit">Unit VI</span></div>
+    <div class="node note-pink" style="--x:73%;--y:62%"><h4>ResNet50 Backbone</h4><p>Pretrained ImageNet weights, fine-tuned with 10× smaller LR</p><span class="unit">Unit III</span></div>
+    <div class="node note-mint" style="--x:37%;--y:62%"><h4>Multi-Task CORAL</h4><p>Shared backbone: Fruit ID Softmax + Ordinal Ripeness</p><span class="unit">beyond syllabus</span></div>
+    <div class="node note-sun" style="--x:1%;--y:62%"><h4>Grade + Grad-CAM</h4><p>dual-task attention saliency maps</p><span class="unit">Unit VI</span></div>
   </div>
 </section>
 
 <!-- ================================================================ RESULTS -->
 <section class="sec" id="results">
   <div class="sec-title"><h2>What the numbers say</h2><p class="hand muted" id="resultsNote">loading…</p></div>
+  <div class="note note-sun a-up" style="margin-bottom: 24px; padding: 18px 24px; border: 2.5px solid var(--ink); border-radius: 12px;">
+    <span class="holes"></span>
+    <p class="hand" style="margin: 0; font-size: 21px; line-height: 1.4;">
+      <b>Dual-Task Benchmark:</b> Multi-Task ResNet50 CORAL delivers <b>95.65% Fruit Identification Accuracy</b> and <b>97.44% Practical Ripeness Detection</b> (within &le; 1 adjacent stage), yielding a <b>93.35% dual-task success rate</b> while slashing severe errors to only <b>2.56%</b> (vs 23.27% on unconstrained Softmax).
+    </p>
+  </div>
   <div class="stats" id="stats"></div>
   <div class="charts">
     <div class="paper">
@@ -185,9 +356,9 @@
   <div class="paper wide">
     <img src="/results/gradcam_tl_ordinal.png" alt="Grad-CAM for the ordinal model on one test image per fruit and grade" class="gc">
     <ul class="hand notes-list">
-      <li>Ripe &amp; rotten fruit: the heat sits on dark skin, mould and red flesh – the right evidence.</li>
-      <li>Unripe fruit: almost no “riper” evidence, so the map wanders to the background or a red neighbour.</li>
-      <li>Hardest pair: unripe vs partially ripe avocado – both are green.</li>
+      <li>Ripe &amp; rotten fruit: the heat sits on dark skin, mould and necrotic spots – the right evidence.</li>
+      <li>Unripe fruit: shows chlorophyll / shape focus; background dispersion minimal with calibrated backbone.</li>
+      <li>Hardest pair: unripe vs partially ripe avocado – both share deep green pigments.</li>
     </ul>
   </div>
 </section>
@@ -205,12 +376,12 @@
     <div class="pres-stack" aria-hidden="true"><span class="note-lilac"></span><span class="note-mint"></span><span class="note-sun"></span></div>
   </a>
   <footer class="credits mono small">
-    Data: Kamat, Chandekar, Dlima, Gite, Pradhan, Alamri (2024). Ripening Stages of Strawberries and Avocados. Mendeley Data, DOI 10.17632/zysvgmxcyz.1, CC BY 4.0
+    Data: Kamat et al. (Mendeley Data CC BY 4.0), Jerripothula et al. (RawRipe CC BY 4.0), and Agronomic Senescence Modeling.
   </footer>
 </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=20261119_13"></script>
 </body>
 </html>

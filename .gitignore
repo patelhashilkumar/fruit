@@ -4,6 +4,18 @@ data/raw/
 # trained weights (45 x 45 MB) – rebuild with src/run_all.py; the deployed models live on the HF Space
 runs/**/best.pt
 
+# intermediate baseline checkpoints (keep active production model Exp_F)
+experiments/checkpoints/Exp_A/
+experiments/checkpoints/Exp_B/
+experiments/checkpoints/Exp_C/
+experiments/checkpoints/Exp_D/
+experiments/checkpoints/Exp_E/
+
+# temporary test files
+user_*.jpg
+test_*_sample.jpg
+.pytest_cache/
+
 # build outputs (regenerate with the deploy/ and webapp/ scripts)
 deploy/onnx/
 deploy/static_space/
@@ -14,3 +26,4 @@ webapp/artifact/
 .claude/
 __pycache__/
 *.pyc
+

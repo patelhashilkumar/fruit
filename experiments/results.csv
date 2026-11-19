@@ -1,0 +1,7 @@
+exp_name,model_type,train_time_sec,fruit_accuracy,fruit_precision_macro,fruit_recall_macro,fruit_f1_macro,fruit_f1_weighted,ripeness_accuracy,ripeness_precision_macro,ripeness_recall_macro,ripeness_f1_macro,ripeness_mae,ripeness_qwk,ripeness_adjacent_error,ripeness_severe_error,checkpoint_path,description
+Exp_A,resnet18_coral,60.7,0.0,0.0,0.0,0.0,0.0,0.5652,0.5794,0.5467,0.5365,0.5985,0.6912,0.2737,0.1611,C:\Users\hashi\Documents\cseee\experiments\checkpoints\Exp_A\best.pt,ResNet18 + CORAL Baseline
+Exp_B,resnet50_softmax_fruit,102.6,0.5217,0.1816,0.3307,0.2337,0.3622,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,C:\Users\hashi\Documents\cseee\experiments\checkpoints\Exp_B\best.pt,ResNet50 Softmax Fruit ID
+Exp_C,resnet50_softmax_ripeness,95.5,0.0,0.0,0.0,0.0,0.0,0.4808,0.5177,0.4654,0.4435,0.8824,0.4573,0.2864,0.2327,C:\Users\hashi\Documents\cseee\experiments\checkpoints\Exp_C\best.pt,ResNet50 Softmax Ripeness
+Exp_D,resnet50_coral,110.9,0.0,0.0,0.0,0.0,0.0,0.4731,0.5519,0.4784,0.4699,0.6675,0.6385,0.3964,0.1304,C:\Users\hashi\Documents\cseee\experiments\checkpoints\Exp_D\best.pt,ResNet50 CORAL Ripeness
+Exp_E,multitask_resnet50,111.7,0.5243,0.1788,0.332,0.2321,0.3626,0.3402,0.4611,0.3643,0.342,0.8338,0.5379,0.4987,0.1611,C:\Users\hashi\Documents\cseee\experiments\checkpoints\Exp_E\best.pt,Multi-Task ResNet50
+Exp_F,multitask_resnet50,340.7,0.9565,0.9544,0.9598,0.956,0.9567,0.6854,0.7052,0.7075,0.6761,0.3427,0.8452,0.289,0.0256,C:\Users\hashi\Documents\cseee\experiments\checkpoints\Exp_F\best.pt,Multi-Task ResNet50 (Balanced)

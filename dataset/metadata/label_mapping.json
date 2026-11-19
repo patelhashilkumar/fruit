@@ -1,0 +1,88 @@
+{
+  "task1_fruit_identification": {
+    "num_classes": 6,
+    "classes": [
+      "Banana",
+      "Mango",
+      "Papaya",
+      "Avocado",
+      "Strawberry",
+      "Apple"
+    ],
+    "id_to_fruit": {
+      "0": "Banana",
+      "1": "Mango",
+      "2": "Papaya",
+      "3": "Avocado",
+      "4": "Strawberry",
+      "5": "Apple"
+    },
+    "fruit_to_id": {
+      "Banana": 0,
+      "Mango": 1,
+      "Papaya": 2,
+      "Avocado": 3,
+      "Strawberry": 4,
+      "Apple": 5
+    }
+  },
+  "task2_ripeness_detection": {
+    "config_A_three_stage": {
+      "num_classes": 3,
+      "num_thresholds": 2,
+      "stages": [
+        "Unripe",
+        "Ripe",
+        "Overripe"
+      ],
+      "id_to_stage": {
+        "0": "Unripe",
+        "1": "Ripe",
+        "2": "Overripe"
+      },
+      "stage_to_id": {
+        "Unripe": 0,
+        "Ripe": 1,
+        "Overripe": 2
+      },
+      "provenance": "Multi-modal Fruit Ripeness Detection dataset standard (originally 0: Over Ripe, 1: Ripe, 2: Unripe, normalized into monotonic order 0 < 1 < 2)"
+    },
+    "config_B_four_stage": {
+      "num_classes": 4,
+      "num_thresholds": 3,
+      "stages": [
+        "Unripe",
+        "Partially Ripe",
+        "Ripe",
+        "Rotten"
+      ],
+      "id_to_stage": {
+        "0": "Unripe",
+        "1": "Partially Ripe",
+        "2": "Ripe",
+        "3": "Rotten"
+      },
+      "stage_to_id": {
+        "Unripe": 0,
+        "Partially Ripe": 1,
+        "Ripe": 2,
+        "Rotten": 3
+      },
+      "provenance": "Kamat et al. Mendeley Data standard (0: Unripe < 1: Partially Ripe < 2: Ripe < 3: Rotten)"
+    }
+  },
+  "mapping_rules": {
+    "three_stage_to_four_stage": {
+      "Unripe": "Unripe",
+      "Ripe": "Ripe",
+      "Overripe": "Rotten"
+    },
+    "four_stage_to_three_stage": {
+      "Unripe": "Unripe",
+      "Partially Ripe": "Unripe",
+      "Ripe": "Ripe",
+      "Rotten": "Overripe"
+    },
+    "notes": "Never conflate quality grades (e.g. Grade A/B/C from AFruitDB) with ripeness stages. When mapping between 3-stage and 4-stage datasets, Partially Ripe must only be used when verified intermediate visual annotations exist."
+  }
+}

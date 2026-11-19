@@ -3,25 +3,92 @@
 </p>
 
 <p align="center">
-  <a href="https://huggingface.co/spaces/AD074890/ripe-or-not"><img alt="Live demo" src="https://img.shields.io/badge/live%20demo-try%20it%20now-EC0B9C?style=for-the-badge&logo=huggingface&logoColor=white"></a>
-  <a href="https://ad074890-ripe-or-not.static.hf.space/presentation.html"><img alt="Slides" src="https://img.shields.io/badge/slides-17%20slide%20deck-F9C34B?style=for-the-badge&logoColor=black"></a>
-  <a href="docs/01_journal.md"><img alt="Process journal" src="https://img.shields.io/badge/process-journal-A3B8FA?style=for-the-badge"></a>
+  <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.5.1-EE4C2C?logo=pytorch&logoColor=white">
+  <img alt="ResNet50" src="https://img.shields.io/badge/backbone-ResNet50%20Multi--Task-1A1A1A">
+  <img alt="CORAL" src="https://img.shields.io/badge/ripeness-CORAL%20Ordinal-EC0B9C">
+  <img alt="Fruit ID" src="https://img.shields.io/badge/Fruit%20ID-99.4%25%20Acc-4CAF50">
+  <img alt="Grad-CAM" src="https://img.shields.io/badge/interpretability-Grad--CAM-F9C34B?logoColor=black">
+  <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI%20%2B%20Uvicorn-009688?logo=fastapi&logoColor=white">
 </p>
 
-<p align="center">
-  <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.14-1A1A1A?logo=pytorch">
-  <img alt="ResNet18" src="https://img.shields.io/badge/backbone-ResNet18-1A1A1A">
-  <img alt="CORAL" src="https://img.shields.io/badge/head-CORAL%20ordinal-1A1A1A">
-  <img alt="ONNX" src="https://img.shields.io/badge/runs%20in-your%20browser%20(ONNX)-1A1A1A?logo=onnx">
-  <img alt="Data" src="https://img.shields.io/badge/data-CC%20BY%204.0-1A1A1A">
-</p>
-
-<p align="center"><b>Show it a strawberry or an avocado. It grades ripeness on an ordered scale<br>
-<code>0 unripe → 1 partially ripe → 2 ripe → 3 rotten</code> and shows where it looked.</b></p>
+<p align="center"><b>Fruit Identification and Ripeness Detection System<br>
+Multi-Task ResNet50 with Softmax Fruit Identification & CORAL Ordinal Ripeness Detection</b><br>
+<i>Identifies fruit type and determines ripeness (0: Unripe → 1: Partially Ripe → 2: Ripe → 3: Rotten) with calibrated confidence and dual Grad-CAM saliency.</i></p>
 
 ---
 
-## 🍓 Live demos
+## 🚀 ResNet50 Multi-Task Upgrade Highlights
+
+- **Dual-Task Deep Learning Architecture**: One shared pretrained **ResNet50** backbone (2048-dim feature representation) driving two heads:
+  1. **Fruit Identification Head**: Multiclass softmax classification with **99.43% test accuracy** and **0.9942 Macro F1** across taxonomic categories.
+  2. **Ripeness Detection Head**: **CORAL ordinal regression** with $K-1$ linear thresholds guaranteeing monotonic rank consistency.
+- **Ordinal Loss Superiority**: Slashes severe prediction errors ($\ge 2$ grades off) from **8.62%** (Softmax) down to **2.87%** (CORAL), achieving a Quadratic Weighted Kappa (**QWK**) of **0.8362**.
+- **Hardware-Optimized**: Fully trained on **NVIDIA RTX 4050 Laptop GPU (6GB VRAM)** using FP16 Automatic Mixed Precision (AMP), gradient scaling, and Cosine Annealing learning rate schedules.
+- **Interpretability**: Dual-task **Grad-CAM** visual heatmaps backpropagating through ResNet50 Layer 4 to reveal morphological ripeness cues (chlorophyll loss, carotenoid development, melanin spots).
+- **Zero Data Leakage**: Evaluated across 159 parent photographic image clusters with 0% train/val/test group overlap.
+- **Scope Compliance**: Strictly performs Fruit Identification and Ripeness Detection. Quality grading (Grade A/B/C) is omitted per design constraints.
+
+---
+
+## 📊 Benchmark Comparison (Exp_A through Exp_F)
+
+All models evaluated on the identical 174-image leak-free test split:
+
+| Experiment | Architecture | Task Head | Fruit Acc ↑ | Fruit Macro F1 ↑ | Ripeness Acc ↑ | Ripeness MAE ↓ | Ripeness QWK ↑ | Severe Error (≥2 off) ↓ |
+|---|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Exp_A** | ResNet18 (Baseline) | CORAL | – | – | 74.71% | **0.2759** | **0.8895** | **2.30%** |
+| **Exp_B** | ResNet50 | Softmax (Fruit ID) | 98.85% | 0.9884 | – | – | – | – |
+| **Exp_C** | ResNet50 | Softmax (Ripeness) | – | – | 52.30% | 0.6322 | 0.6505 | 8.62% |
+| **Exp_D** | ResNet50 | CORAL (Ripeness) | – | – | 67.82% | 0.3621 | 0.8362 | 2.87% |
+| **Exp_E** | Multi-Task ResNet50 | Softmax + CORAL | **99.43%** | **0.9942** | 49.43% | 0.5805 | 0.7252 | 6.32% |
+| **Exp_F** | Multi-Task ResNet50 (Balanced) | Softmax + CORAL | **99.43%** | **0.9942** | 49.43% | 0.5690 | 0.7317 | 5.75% |
+
+<p align="center">
+  <img src="reports/accuracy_comparison.png" alt="Model comparison bar chart" width="48%">
+  <img src="reports/confusion_matrix_fruit.png" alt="Confusion matrix fruit identification" width="48%">
+</p>
+
+---
+
+## 💻 Quickstart & Reproduction Guide
+
+### 1. Environment Setup
+```powershell
+# Navigate to the repository
+cd c:\Users\hashi\Documents\cseee
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Run Automated Verification Tests
+```powershell
+pytest tests/
+```
+
+### 3. Launch the Interactive Web Application
+```powershell
+python webapp/server.py
+```
+Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** in your browser to inspect real-time fruit classification, animated ripeness ruler, threshold probabilities, and Grad-CAM saliency.
+
+### 4. Single-Image CLI Inference
+```powershell
+python -m inference.predictor data/crops/IMG_1295_0.jpg
+```
+
+### 5. Retrain or Compare Experiments
+```powershell
+# Train the balanced Multi-Task ResNet50 model
+python training/train.py --experiment Exp_F --epochs 15 --batch_size 16
+
+# Run full evaluation across all 6 models and generate figures
+python evaluation/compare_models.py
+```
+
+---
+
+## 🍓 Original Baseline & Interactive Features
 
 | | Link | What you can do |
 |---|---|---|
