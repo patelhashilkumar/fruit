@@ -15,6 +15,12 @@
 Multi-Task ResNet50 with Softmax Fruit Identification & CORAL Ordinal Ripeness Detection</b><br>
 <i>Identifies fruit type and determines ripeness (0: Unripe → 1: Partially Ripe → 2: Ripe → 3: Rotten) with calibrated confidence and dual Grad-CAM saliency.</i></p>
 
+<p align="center">
+  <a href="docs/VIVA_DEFENSE_GUIDE.md"><b>📚 Read the Full Viva & Defense Technical Guide</b></a> |
+  <a href="#-quickstart--reproduction-guide"><b>💻 Quickstart Guide</b></a> |
+  <a href="#-benchmark-comparison-exp_a-through-exp_f"><b>📊 Benchmark Results</b></a>
+</p>
+
 ---
 
 ## 🚀 ResNet50 Multi-Task Upgrade Highlights
